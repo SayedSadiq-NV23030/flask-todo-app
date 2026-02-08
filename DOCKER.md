@@ -78,4 +78,15 @@ docker logs <container_id>
 - Port: 5000
 - Health Check: Enabled
 
+## Versioned images
+
+We tag releases using semantic versioning. The initial release is:
+
+```bash
+docker pull sayedsadiq/flask-todo-app:1.0.0
+docker run -p 5000:5000 sayedsadiq/flask-todo-app:1.0.0
+```
+
+Future releases will use the `MAJOR.MINOR.PATCH` format (for example `1.0.1`, `1.1.0`, `2.0.0`).
+
 Happy containerizing! 🎉
