@@ -90,3 +90,14 @@ docker run -p 5000:5000 sayedsadiq/flask-todo-app:1.0.0
 Future releases will use the `MAJOR.MINOR.PATCH` format (for example `1.0.1`, `1.1.0`, `2.0.0`).
 
 Happy containerizing! 🎉
+ 
+## v1.1.0 — UI update (light/dark toggle)
+
+This release includes an improved, professional UI and a saved light/dark theme toggle.
+
+Pull and run:
+
+```bash
+docker pull sayedsadiq/flask-todo-app:1.1.0
+docker run -p 5000:5000 sayedsadiq/flask-todo-app:1.1.0
+```
