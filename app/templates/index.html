@@ -1,381 +1,65 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
-
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo App</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUarbnLLtQcqpgIemVsqwj0fFo8OTQSOJmW9IqUCLtUPD4C15fN" crossorigin="anonymous">
-    
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3H97+4rTrEawO+IJKQFDQ60UtIQmUUKp4ulcrEYSQojryorWEcBA+VzCCW8ES6TS6eLeDGseKKA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --card-bg: rgba(255, 255, 255, 0.05);
-            --border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Load Inter from Google Fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
-
-        body {
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-            background-attachment: fixed;
-            min-height: 100vh;
-            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #e9eef8;
-            -webkit-font-smoothing:antialiased;
-            -moz-osx-font-smoothing:grayscale;
-        }
-
-        .main-container {
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 16px 16px;
-        }
-
-        .header-block {
-            background: linear-gradient(180deg, #7a4ff8 0%, #6d3ce8 60%);
-            border-radius: 18px;
-            padding: 18px;
-            color: white;
-            margin-bottom: 14px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Light theme overrides */
-        html[data-bs-theme="light"] body {
-            background: #f4f6f9;
-            color: #1f2937;
-        }
-
-        html[data-bs-theme="light"] .header-block {
-            background: linear-gradient(180deg, #ffffff 0%, #f6f7fb 60%);
-            color: #0f1724;
-            box-shadow: 0 2px 6px rgba(16,24,40,0.05);
-        }
-
-        html[data-bs-theme="light"] .search-pill {
-            background: #fff;
-            border: 1px solid rgba(15,23,36,0.06);
-        }
-
-        html[data-bs-theme="light"] .filter-pill {
-            background: #fff;
-            color: #0f1724;
-            border: 1px solid rgba(15,23,36,0.04);
-        }
-
-        html[data-bs-theme="light"] .todo-item {
-            background: #fff;
-            color: #0f1724;
-            border: 1px solid rgba(15,23,36,0.06);
-            box-shadow: 0 1px 2px rgba(16,24,40,0.03);
-        }
-
-        html[data-bs-theme="light"] .btn-delete { background: linear-gradient(135deg,#ff7eb6 0%, #ff6a88 100%); }
-
-
-        .header-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .greeting {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin: 0;
-            color: #fff;
-        }
-
-        .subtle {
-            font-size: 0.85rem;
-            color: rgba(255,255,255,0.9);
-            opacity: 0.9;
-            margin: 0;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .input-section {
-            margin-top: 12px;
-            margin-bottom: 10px;
-            animation: slideUp 0.45s ease-out 0.05s both;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .search-pill {
-            display: flex;
-            align-items: center;
-            background: rgba(255,255,255,0.06);
-            border-radius: 999px;
-            padding: 6px 10px;
-            gap: 8px;
-            border: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .search-pill input {
-            background: transparent;
-            border: none;
-            color: #f7f9ff;
-            width: 100%;
-            font-size: 0.95rem;
-            padding: 6px 8px;
-        }
-
-        .input-group:focus-within {
-            border-color: #667eea;
-            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .input-group input {
-            background: transparent;
-            border: none;
-            color: #e0e0e0;
-            font-size: 1rem;
-            padding: 10px 12px;
-        }
-
-        .input-group input::placeholder {
-            color: #808080;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            box-shadow: none;
-        }
-
-        .btn-add {
-            background: rgba(255,255,255,0.12);
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .input-group .btn-add:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-
-        .todo-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            animation: slideUp 0.6s ease-out 0.2s both;
-        }
-
-        .filters {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-
-        .filter-pill {
-            background: rgba(255,255,255,0.04);
-            color: #f2f4fb;
-            padding: 6px 12px;
-            border-radius: 999px;
-            font-size: 0.85rem;
-            border: 1px solid rgba(255,255,255,0.02);
-            cursor: pointer;
-        }
-
-        .todo-item {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 10px 12px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(6px);
-            transition: all 0.18s ease;
-            gap: 10px;
-        }
-
-        .todo-item:hover {
-            background: rgba(102, 126, 234, 0.1);
-            border-color: rgba(102, 126, 234, 0.3);
-            transform: translateX(5px);
-        }
-
-        .todo-item span {
-            flex-grow: 1;
-            font-size: 0.98rem;
-            color: #eef3ff;
-            word-break: break-word;
-        }
-
-        .btn-delete {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            border: none;
-            border-radius: 6px;
-            padding: 6px 10px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-            font-size: 0.85rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .btn-delete:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(245, 87, 108, 0.4);
-            color: white;
-            text-decoration: none;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 24px 12px;
-            color: #6d7080;
-        }
-
-        .empty-state p {
-            font-size: 1rem;
-            margin: 0;
-        }
-        @media (max-width: 480px) {
-            .main-container { padding: 12px; }
-            .header-block { padding: 14px; border-radius: 14px; }
-            .greeting { font-size: 1rem; }
-            .search-pill input { font-size: 0.95rem; }
-            .todo-item { padding: 8px 10px; }
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Todo • Modern</title>
+  <link rel="stylesheet" href="/static/css/style.css">
 </head>
-
 <body>
+  <div class="container" style="min-height:100vh;padding:24px">
+    <header class="topbar card">
+      <div class="brand">
+        <div class="logo">✓</div>
+        <div>
+          <div class="brand-title">Todo</div>
+          <div class="brand-sub">Minimal • Modern</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn btn-ghost">Toggle Theme</button>
+      </div>
+    </header>
 
-    <div class="main-container">
-        <!-- Header Block (purple) -->
-        <div class="header-block">
-            <div class="header-top">
-                <div>
-                    <p class="greeting">Hello, User</p>
-                    <p class="subtle">Manage your tasks effortlessly</p>
-                </div>
-                <div>
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <button id="theme-toggle" aria-label="Toggle theme" title="Toggle theme" style="background:transparent;border:none;color:rgba(255,255,255,0.95);width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-right:6px;">
-                            <i class="fas fa-sun" id="theme-icon" style="font-size:0.95rem"></i>
-                        </button>
-                        <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.12); display:flex;align-items:center;justify-content:center;font-weight:600;">U</div>
-                    </div>
-                </div>
-            </div>
+    <main class="main-grid" style="display:grid;grid-template-columns:1fr 1.2fr 280px;gap:18px;margin-top:18px">
+      <section class="card add-task-card">
+        <form id="add-form" class="add-task-form">
+          <input id="todo-input" name="todo" placeholder="Title" required autocomplete="off">
+          <input id="todo-desc" name="description" placeholder="Short description (optional)" autocomplete="off">
+          <select id="todo-priority" name="priority" aria-label="Priority">
+            <option value="2">Medium</option>
+            <option value="1">High</option>
+            <option value="3">Low</option>
+          </select>
+          <input id="todo-due" name="due_date" type="date" aria-label="Due date">
+          <button type="submit" class="btn primary">Add Task</button>
+        </form>
+      </section>
 
-            <form action="/add" method="POST" class="input-section">
-                <div class="search-pill">
-                    <i class="fas fa-search" style="color:rgba(255,255,255,0.9)"></i>
-                    <input type="text" name="todo" placeholder="Search or add a task..." aria-label="Search or add" />
-                    <button type="submit" class="btn-add"><i class="fas fa-plus"></i></button>
-                </div>
-                <div class="filters">
-                    <div class="filter-pill">All</div>
-                    <div class="filter-pill">Personal</div>
-                    <div class="filter-pill">Work</div>
-                    <div class="filter-pill">Important</div>
-                </div>
-            </form>
+      <section class="card tasks">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+          <input id="search-input" placeholder="Search tasks..." style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(15,23,36,0.06);background:var(--input-bg)">
+          <select id="sort-select" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(15,23,36,0.06);background:var(--input-bg)">
+            <option value="created">Sort: Created</option>
+            <option value="due">Sort: Due Date</option>
+            <option value="priority">Sort: Priority</option>
+            <option value="title">Sort: Title</option>
+          </select>
+        </div>
+        <div class="filters" id="filters"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="active">Active</button><button class="filter" data-filter="completed">Completed</button></div>
+        <ul id="task-list" class="task-list" aria-live="polite"></ul>
+        <div class="empty-state" id="empty-state">No tasks — add your first task</div>
+      </section>
 
-        <!-- Todo List -->
-        <ul class="todo-list">
-            {% if todos %}
-                {% for todo in todos %}
-                <li class="todo-item">
-                    <span>{{ todo }}</span>
-                    <a href="/delete/{{ loop.index0 }}" class="btn-delete" aria-label="Delete"><i class="fas fa-trash"></i></a>
-                </li>
-                {% endfor %}
-            {% else %}
-                <div class="empty-state">
-                    <p>No tasks yet. Add one to get started.</p>
-                </div>
-            {% endif %}
-        </ul>
-    </div>
+      <aside class="card right-column">
+        <div class="greeting">Today</div>
+        <div class="muted">Tasks are stored locally in your browser.</div>
+        <div style="height:12px"></div>
+        <button id="clear-all" class="btn btn-ghost danger">Clear All</button>
+      </aside>
+    </main>
 
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyou6DtjuezonIqse6QvDK27Z8MUlhznstajimF" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js" integrity="sha384-fbbOQedDM0/OKZkVK8WaBLU4Kgor+ft3vAIapMqWZG6+xqUrlnREVzpMu9FsVCVe" crossorigin="anonymous"></script>
-
-    <script>
-        // Theme toggle: toggles html[data-bs-theme] between 'dark' and 'light'
-        (function(){
-            const root = document.documentElement;
-            const toggle = document.getElementById('theme-toggle');
-            const icon = document.getElementById('theme-icon');
-
-            function setTheme(theme){
-                if(theme === 'light'){
-                    root.setAttribute('data-bs-theme','light');
-                    icon.className = 'fas fa-moon';
-                } else {
-                    root.setAttribute('data-bs-theme','dark');
-                    icon.className = 'fas fa-sun';
-                }
-                try{ localStorage.setItem('site-theme', theme); }catch(e){}
-            }
-
-            // initialize from localStorage or prefer system
-            let saved = null;
-            try{ saved = localStorage.getItem('site-theme'); }catch(e){}
-            if(saved) setTheme(saved);
-            else {
-                const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-                setTheme(prefersLight ? 'light' : 'dark');
-            }
-
-            toggle.addEventListener('click', function(){
-                const current = root.getAttribute('data-bs-theme') === 'light' ? 'light' : 'dark';
-                setTheme(current === 'light' ? 'dark' : 'light');
-            });
-        })();
-    </script>
-
+    <script src="/static/js/app.js"></script>
+  </div>
 </body>
-
 </html>
