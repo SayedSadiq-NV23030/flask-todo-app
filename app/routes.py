@@ -37,3 +37,8 @@ def delete_todo(idx):
         todos.pop(idx)
         save_todos(todos)
     return redirect(url_for('todo_routes.index'))
+
+
+@todo_routes.route('/offline')
+def offline():
+    return render_template('offline.html')
