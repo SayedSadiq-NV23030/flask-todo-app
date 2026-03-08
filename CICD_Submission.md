@@ -60,7 +60,6 @@ jobs:
 ### Screenshot of Successful CI Run
 
 ![Successful CI Run](images/ci_success.png)
-![Successful CI Run](images/ci_success_details.png)
 
 **Description:** The screenshots above show a successful CI workflow run where linting passed and all pytest tests completed successfully.
 
@@ -118,7 +117,6 @@ jobs:
 ### Screenshot of Successful CD Run
 
 ![Successful CD Run](images/cd_success.png)
-![Successful CD Run](images/cd_success_details.png)
 
 **Description:** The screenshots above show a successful CD workflow run triggered by a published release, with the Docker image built and pushed to DockerHub.
 
@@ -142,7 +140,7 @@ jobs:
 
 ![GitHub Release](images/github_release.png)
 
-**Description:** The screenshot above shows the release page with a version tag (for example `v0.3.0`) that triggered the CD workflow.
+**Description:** The screenshot above shows the release page with a version tag (for example `v0.2.0`) that triggered the CD workflow.
 
 ---
 
