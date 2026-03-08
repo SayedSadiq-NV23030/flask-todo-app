@@ -1,11 +1,14 @@
 import os
 import sys
 import json
+
 # ensure project root is on sys.path so imports find app.py
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-import importlib.util
+
+import importlib.util  # noqa: E402
+
 app_py = os.path.join(ROOT, 'app.py')
 spec = importlib.util.spec_from_file_location('app_main', app_py)
 app_module = importlib.util.module_from_spec(spec)
@@ -14,11 +17,13 @@ flask_app = getattr(app_module, 'app')
 
 TODOS = os.path.join(ROOT, 'todos.json')
 
+
 def backup_file(path):
     if os.path.exists(path):
         with open(path, 'r') as f:
             return f.read()
     return None
+
 
 def restore_file(path, content):
     if content is None:
@@ -29,6 +34,7 @@ def restore_file(path, content):
     else:
         with open(path, 'w') as f:
             f.write(content)
+
 
 def run_smoke():
     orig = backup_file(TODOS)
@@ -64,7 +70,9 @@ def run_smoke():
 
         # Offline page
         r = client.get('/offline')
-        assert r.status_code == 200 and b"You're offline" in r.data or b"offline" in r.data.lower()
+        assert r.status_code == 200 and (
+            b"You're offline" in r.data or b"offline" in r.data.lower()
+        )
 
         # Manifest and static assets
         r = client.get('/static/manifest.json')
@@ -76,6 +84,7 @@ def run_smoke():
 
     finally:
         restore_file(TODOS, orig)
+
 
 if __name__ == '__main__':
     run_smoke()
