@@ -151,7 +151,6 @@ jobs:
 Through this project, I gained practical experience implementing CI/CD with GitHub Actions. I learned how to automate quality checks so that linting and tests run on every push and pull request to key branches. I also learned how release-driven deployment works by building and pushing Docker images automatically when a release is published. Using GitHub Secrets for DockerHub authentication reinforced secure credential management practices. Overall, this workflow improved reliability and reduced manual deployment effort.
 
 ---
-
 ## Additional Notes
 
 ### Repository Information
