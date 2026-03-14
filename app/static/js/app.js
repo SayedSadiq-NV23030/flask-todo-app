@@ -52,14 +52,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const li = document.createElement('li');
       li.className = 'task-card fade-in';
       li.innerHTML = `
-        <div style="display:flex;gap:12px;align-items:center">
-          <button class="btn-icon checkbox" data-id="${t.id}" aria-pressed="${t.done ? 'true' : 'false'}">${t.done ? '✓' : ''}</button>
-          <div>
+        <div class="task-main">
+          <button
+            class="btn-icon checkbox ${t.done ? 'is-checked' : 'is-unchecked'}"
+            data-id="${t.id}"
+            aria-pressed="${t.done ? 'true' : 'false'}"
+            aria-label="${t.done ? 'Mark task as active' : 'Mark task as completed'}"
+            title="${t.done ? 'Mark as active' : 'Mark as completed'}"
+          >
+            <span class="checkbox-mark" aria-hidden="true">${t.done ? '✓' : ''}</span>
+          </button>
+          <div class="task-content">
             <div class="task-title">${escapeHtml(t.title)}</div>
-            <div class="task-meta">${t.description ? escapeHtml(t.description) + ' • ' : ''}${t.due_date ? 'Due: ' + escapeHtml(t.due_date) + ' • ' : ''}${t.createdAt || ''}</div>
+            <div class="task-meta">
+              ${t.description ? escapeHtml(t.description) + ' • ' : ''}${t.due_date ? 'Due: ' + escapeHtml(t.due_date) + ' • ' : ''}${t.createdAt || ''}
+            </div>
+            <div class="task-toggle-hint">${t.done ? 'Completed. Tap to uncheck.' : 'Tap circle to mark as done.'}</div>
           </div>
         </div>
-        <div>
+        <div class="task-actions">
           <button class="btn btn-ghost delete" data-id="${t.id}">Delete</button>
         </div>
       `;
