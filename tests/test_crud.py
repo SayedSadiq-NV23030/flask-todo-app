@@ -102,5 +102,3 @@ def test_delete_task(client):
     assert listed.status_code == 200
     titles = [task['title'] for task in listed.get_json()]
     assert 'To be deleted' not in titles
-
-
