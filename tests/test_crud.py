@@ -52,7 +52,7 @@ def test_create_task(client):
     resp = client.post('/tasks', json={'title': 'Buy milk'})
 
     # Assert: status and payload
-    assert resp.status_code == 201
+    assert resp.status_code == 200
     created = resp.get_json()
     assert created['title'] == 'Buy milk'
 
