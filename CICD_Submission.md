@@ -63,6 +63,13 @@ jobs:
 
 **Description:** The screenshots above show a successful CI workflow run where linting passed and all pytest tests completed successfully.
 
+### Verification Notes
+
+- The workflow file exists at `.github/workflows/ci.yml`.
+- The workflow runs on both `push` and `pull_request` for `dev` and `main`.
+- The current GitHub Actions workflow name is `CI`.
+- The job name shown in GitHub Actions is `lint-and-test`.
+
 ---
 
 ## CD Workflow (cd.yml)
