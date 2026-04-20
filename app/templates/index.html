@@ -42,10 +42,28 @@
         <div class="tasks-toolbar">
           <input id="search-input" class="field" placeholder="Search tasks...">
           <select id="sort-select" class="field field-select">
-            <option value="created">Sort: Created</option>
-            <option value="due">Sort: Due Date</option>
+            <option value="created_at">Sort: Created</option>
+            <option value="due_date">Sort: Due Date</option>
             <option value="priority">Sort: Priority</option>
             <option value="title">Sort: Title</option>
+          </select>
+          <select id="order-select" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(15,23,36,0.06);background:var(--input-bg)">
+            <option value="desc">Desc</option>
+            <option value="asc">Asc</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+          <select id="priority-filter" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(15,23,36,0.06);background:var(--input-bg)">
+            <option value="">Priority: All</option>
+            <option value="1">Priority: High</option>
+            <option value="2">Priority: Medium</option>
+            <option value="3">Priority: Low</option>
+          </select>
+          <select id="due-filter" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(15,23,36,0.06);background:var(--input-bg)">
+            <option value="">Due: Any</option>
+            <option value="overdue">Due: Overdue</option>
+            <option value="today">Due: Today</option>
+            <option value="this_week">Due: This Week</option>
           </select>
         </div>
         <div class="filters" id="filters"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="active">Active</button><button class="filter" data-filter="completed">Completed</button></div>
