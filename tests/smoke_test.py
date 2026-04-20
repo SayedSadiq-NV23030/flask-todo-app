@@ -116,6 +116,17 @@ def run_smoke():
         payload = r.get_json()
         assert any(t['id'] == created['id'] for t in payload['tasks'])
 
+        # API: subtasks checklist
+        r = client.post(f"/api/tasks/{created['id']}/subtasks", json={'title': 'Prepare notes'})
+        assert r.status_code == 201
+        subtask = r.get_json()
+
+        r = client.patch(f"/api/tasks/{created['id']}/subtasks/{subtask['id']}", json={'is_done': True})
+        assert r.status_code == 200
+
+        r = client.post(f"/api/tasks/{created['id']}/subtasks/reorder", json={'ordered_ids': [subtask['id']]})
+        assert r.status_code == 200
+
         # API: stats dashboard
         r = client.get('/api/stats')
         assert r.status_code == 200

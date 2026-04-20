@@ -82,6 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (emptyEl) emptyEl.style.display = 'none';
     tasks.forEach((t) => {
+      const subtasks = Array.isArray(t.subtasks) ? t.subtasks : [];
+      const doneCount = subtasks.filter((s) => s.is_done).length;
       const li = document.createElement('li');
       li.className = 'task-card fade-in';
       li.innerHTML = `
@@ -101,6 +103,20 @@ document.addEventListener('DOMContentLoaded', () => {
               ${t.description ? escapeHtml(t.description) + ' • ' : ''}Priority: ${priorityLabel(t.priority)}${t.due_date ? ' • Due: ' + escapeHtml(formatDateLabel(t.due_date)) : ''}${t.created_at ? ' • ' + escapeHtml(createdLabel(t.created_at)) : ''}
             </div>
             ${Array.isArray(t.tags) && t.tags.length ? `<div class="task-tags">${t.tags.map((tag) => `<span class="task-tag">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+            <div class="subtasks-wrap">
+              <div class="subtasks-header">Checklist: ${doneCount}/${subtasks.length}</div>
+              ${subtasks.length ? `<div class="subtasks-list">${subtasks.map((s) => `
+                <div class="subtask-row">
+                  <button class="subtask-toggle ${s.is_done ? 'done' : ''}" data-task-id="${t.id}" data-subtask-id="${s.id}">${s.is_done ? '✓' : ''}</button>
+                  <span class="subtask-title ${s.is_done ? 'done' : ''}">${escapeHtml(s.title)}</span>
+                  <button class="subtask-delete" data-task-id="${t.id}" data-subtask-id="${s.id}">x</button>
+                </div>
+              `).join('')}</div>` : '<div class="subtask-empty">No subtasks</div>'}
+              <form class="subtask-form" data-task-id="${t.id}">
+                <input class="subtask-input" maxlength="120" placeholder="Add subtask..." />
+                <button type="submit" class="btn btn-ghost">Add</button>
+              </form>
+            </div>
             <div class="task-toggle-hint">${t.status === 'completed' ? 'Completed. Tap to uncheck.' : 'Tap circle to mark as done.'}</div>
           </div>
         </div>
@@ -117,6 +133,38 @@ document.addEventListener('DOMContentLoaded', () => {
       li.querySelector('.checkbox').addEventListener('click', (e) => {
         const id = e.target.getAttribute('data-id');
         toggleDone(id);
+      });
+
+      li.querySelectorAll('.subtask-form').forEach((subtaskForm) => {
+        subtaskForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const taskId = subtaskForm.getAttribute('data-task-id');
+          const inputEl = subtaskForm.querySelector('.subtask-input');
+          const title = ((inputEl && inputEl.value) || '').trim();
+          if (!title) return;
+          await addSubtask(taskId, title);
+          if (inputEl) inputEl.value = '';
+        });
+      });
+
+      li.querySelectorAll('.subtask-toggle').forEach((button) => {
+        button.addEventListener('click', async (e) => {
+          const taskId = e.target.getAttribute('data-task-id');
+          const subtaskId = e.target.getAttribute('data-subtask-id');
+          const task = tasks.find((x) => x.id === taskId);
+          if (!task) return;
+          const subtask = (task.subtasks || []).find((s) => s.id === subtaskId);
+          if (!subtask) return;
+          await toggleSubtask(taskId, subtaskId, !subtask.is_done);
+        });
+      });
+
+      li.querySelectorAll('.subtask-delete').forEach((button) => {
+        button.addEventListener('click', async (e) => {
+          const taskId = e.target.getAttribute('data-task-id');
+          const subtaskId = e.target.getAttribute('data-subtask-id');
+          await deleteSubtask(taskId, subtaskId);
+        });
       });
 
       listEl.appendChild(li);
@@ -173,6 +221,40 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirm('Clear all tasks?')) return;
     const ids = tasks.map((t) => t.id);
     await Promise.all(ids.map((id) => fetch(`/api/tasks/${id}`, { method: 'DELETE' })));
+    await refreshAll();
+  }
+
+  async function addSubtask(taskId, title) {
+    const res = await fetch(`/api/tasks/${taskId}/subtasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    });
+    if (!res.ok) {
+      throw new Error('Failed to add subtask');
+    }
+    await refreshAll();
+  }
+
+  async function toggleSubtask(taskId, subtaskId, isDone) {
+    const res = await fetch(`/api/tasks/${taskId}/subtasks/${subtaskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_done: isDone }),
+    });
+    if (!res.ok) {
+      throw new Error('Failed to update subtask');
+    }
+    await refreshAll();
+  }
+
+  async function deleteSubtask(taskId, subtaskId) {
+    const res = await fetch(`/api/tasks/${taskId}/subtasks/${subtaskId}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      throw new Error('Failed to delete subtask');
+    }
     await refreshAll();
   }
 

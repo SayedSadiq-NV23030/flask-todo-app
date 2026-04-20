@@ -84,6 +84,32 @@ def normalize_tags(tags):
     return cleaned
 
 
+def normalize_subtasks(subtasks):
+    if not isinstance(subtasks, list):
+        return []
+
+    normalized = []
+    for i, item in enumerate(subtasks):
+        if not isinstance(item, dict):
+            continue
+
+        title = str(item.get('title') or '').strip()
+        if not title:
+            continue
+
+        normalized.append({
+            'id': str(item.get('id') or uuid.uuid4().hex),
+            'title': title[:120],
+            'is_done': bool(item.get('is_done')),
+            'order': int(item.get('order', i)),
+        })
+
+    normalized.sort(key=lambda s: int(s.get('order', 0)))
+    for idx, subtask in enumerate(normalized):
+        subtask['order'] = idx
+    return normalized
+
+
 def normalize_task(item):
     timestamp = now_iso()
 
@@ -125,6 +151,7 @@ def normalize_task(item):
         'due_date': parse_due_date(item.get('due_date')),
         'status': normalize_status(item.get('status'), item.get('done')),
         'tags': normalize_tags(item.get('tags')),
+        'subtasks': normalize_subtasks(item.get('subtasks')),
         'created_at': created_at,
         'updated_at': updated_at,
     }
@@ -222,6 +249,7 @@ def build_task_from_request(payload):
         'due_date': parse_due_date(payload.get('due_date')),
         'status': normalize_status(payload.get('status')),
         'tags': normalize_tags(payload.get('tags')),
+        'subtasks': [],
         'created_at': timestamp,
         'updated_at': timestamp,
     }
@@ -410,6 +438,122 @@ def remove_task_tag(task_id, tag_name):
         task['updated_at'] = now_iso()
         save_todos(todos)
         return jsonify(task), 200
+
+    return jsonify({'error': 'task not found'}), 404
+
+
+@todo_routes.route('/api/tasks/<task_id>/subtasks', methods=['POST'])
+def add_subtask(task_id):
+    todos = load_todos()
+    payload = request.get_json(silent=True) or {}
+    title = str(payload.get('title') or '').strip()
+    if not title:
+        return jsonify({'error': 'subtask title is required'}), 400
+
+    for task in todos:
+        if task.get('id') != task_id:
+            continue
+
+        subtasks = normalize_subtasks(task.get('subtasks'))
+        subtask = {
+            'id': uuid.uuid4().hex,
+            'title': title[:120],
+            'is_done': False,
+            'order': len(subtasks),
+        }
+        subtasks.append(subtask)
+        task['subtasks'] = normalize_subtasks(subtasks)
+        task['updated_at'] = now_iso()
+        save_todos(todos)
+        return jsonify(subtask), 201
+
+    return jsonify({'error': 'task not found'}), 404
+
+
+@todo_routes.route('/api/tasks/<task_id>/subtasks/<subtask_id>', methods=['PATCH'])
+def update_subtask(task_id, subtask_id):
+    todos = load_todos()
+    payload = request.get_json(silent=True) or {}
+
+    for task in todos:
+        if task.get('id') != task_id:
+            continue
+
+        subtasks = normalize_subtasks(task.get('subtasks'))
+        for subtask in subtasks:
+            if subtask.get('id') != subtask_id:
+                continue
+
+            if 'title' in payload:
+                title = str(payload.get('title') or '').strip()
+                if title:
+                    subtask['title'] = title[:120]
+            if 'is_done' in payload:
+                subtask['is_done'] = bool(payload.get('is_done'))
+            if 'order' in payload:
+                try:
+                    subtask['order'] = int(payload.get('order'))
+                except (TypeError, ValueError):
+                    pass
+
+            task['subtasks'] = normalize_subtasks(subtasks)
+            task['updated_at'] = now_iso()
+            save_todos(todos)
+            return jsonify(subtask), 200
+
+        return jsonify({'error': 'subtask not found'}), 404
+
+    return jsonify({'error': 'task not found'}), 404
+
+
+@todo_routes.route('/api/tasks/<task_id>/subtasks/reorder', methods=['POST'])
+def reorder_subtasks(task_id):
+    todos = load_todos()
+    payload = request.get_json(silent=True) or {}
+    ordered_ids = payload.get('ordered_ids')
+    if not isinstance(ordered_ids, list):
+        return jsonify({'error': 'ordered_ids must be a list'}), 400
+
+    for task in todos:
+        if task.get('id') != task_id:
+            continue
+
+        subtasks = normalize_subtasks(task.get('subtasks'))
+        by_id = {s['id']: s for s in subtasks}
+        if set(ordered_ids) != set(by_id.keys()):
+            return jsonify({'error': 'ordered_ids must match existing subtasks'}), 400
+
+        reordered = []
+        for idx, sid in enumerate(ordered_ids):
+            item = by_id[sid]
+            item['order'] = idx
+            reordered.append(item)
+
+        task['subtasks'] = normalize_subtasks(reordered)
+        task['updated_at'] = now_iso()
+        save_todos(todos)
+        return jsonify({'subtasks': task['subtasks']}), 200
+
+    return jsonify({'error': 'task not found'}), 404
+
+
+@todo_routes.route('/api/tasks/<task_id>/subtasks/<subtask_id>', methods=['DELETE'])
+def delete_subtask(task_id, subtask_id):
+    todos = load_todos()
+
+    for task in todos:
+        if task.get('id') != task_id:
+            continue
+
+        subtasks = normalize_subtasks(task.get('subtasks'))
+        kept = [s for s in subtasks if s.get('id') != subtask_id]
+        if len(kept) == len(subtasks):
+            return jsonify({'error': 'subtask not found'}), 404
+
+        task['subtasks'] = normalize_subtasks(kept)
+        task['updated_at'] = now_iso()
+        save_todos(todos)
+        return jsonify({'ok': True}), 200
 
     return jsonify({'error': 'task not found'}), 404
 
