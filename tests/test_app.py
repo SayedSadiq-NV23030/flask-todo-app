@@ -64,3 +64,43 @@ def test_api_task_lifecycle(tmp_path):
             assert any(t['id'] == task['id'] for t in payload['tasks'])
     finally:
         os.chdir(cwd)
+
+
+def test_tags_and_stats_endpoints(tmp_path):
+    app = load_flask_app()
+    app.config['TESTING'] = True
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        with open('todos.json', 'w') as f:
+            json.dump([], f)
+
+        with app.test_client() as client:
+            create = client.post('/api/tasks', json={
+                'title': 'Tagged task',
+                'description': 'Has labels',
+                'priority': 2,
+                'tags': 'work,urgent'
+            })
+            assert create.status_code == 201
+            task = create.get_json()
+
+            tags = client.get('/api/tags')
+            assert tags.status_code == 200
+            tags_payload = tags.get_json()
+            assert 'work' in [t.lower() for t in tags_payload['tags']]
+
+            by_tag = client.get('/api/tasks?tag=work')
+            assert by_tag.status_code == 200
+            by_tag_payload = by_tag.get_json()
+            assert any(t['id'] == task['id'] for t in by_tag_payload['tasks'])
+
+            client.patch(f"/api/tasks/{task['id']}", json={'status': 'completed'})
+            stats = client.get('/api/stats')
+            assert stats.status_code == 200
+            stats_payload = stats.get_json()
+            assert stats_payload['total_tasks'] == 1
+            assert stats_payload['completed_tasks'] == 1
+    finally:
+        os.chdir(cwd)
