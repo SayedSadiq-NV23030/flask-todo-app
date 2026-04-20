@@ -92,7 +92,8 @@ def run_smoke():
             'title': 'API Task',
             'description': 'Created from test',
             'priority': 3,
-            'due_date': '2099-10-01'
+            'due_date': '2099-10-01',
+            'tags': 'ops,backend'
         })
         assert r.status_code == 201
         created = r.get_json()
@@ -103,6 +104,24 @@ def run_smoke():
         assert r.status_code == 200
         payload = r.get_json()
         assert any(t['id'] == created['id'] for t in payload['tasks'])
+
+        # API: tags listing and filtering
+        r = client.get('/api/tags')
+        assert r.status_code == 200
+        tags_payload = r.get_json()
+        assert any(t.lower() == 'ops' for t in tags_payload['tags'])
+
+        r = client.get('/api/tasks?tag=ops')
+        assert r.status_code == 200
+        payload = r.get_json()
+        assert any(t['id'] == created['id'] for t in payload['tasks'])
+
+        # API: stats dashboard
+        r = client.get('/api/stats')
+        assert r.status_code == 200
+        stats_payload = r.get_json()
+        assert stats_payload.get('total_tasks', 0) >= 1
+        assert stats_payload.get('completed_tasks', 0) >= 1
 
         # Offline page
         r = client.get('/offline')

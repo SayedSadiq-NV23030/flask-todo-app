@@ -62,6 +62,28 @@ def normalize_status(status, done=None):
     return 'active'
 
 
+def normalize_tags(tags):
+    if tags is None:
+        return []
+
+    if isinstance(tags, str):
+        pieces = [p.strip() for p in tags.split(',')]
+    elif isinstance(tags, list):
+        pieces = [str(p).strip() for p in tags]
+    else:
+        pieces = [str(tags).strip()]
+
+    seen = set()
+    cleaned = []
+    for tag in pieces:
+        lowered = tag.lower()
+        if not lowered or lowered in seen:
+            continue
+        seen.add(lowered)
+        cleaned.append(tag)
+    return cleaned
+
+
 def normalize_task(item):
     timestamp = now_iso()
 
@@ -102,6 +124,7 @@ def normalize_task(item):
         'priority': normalize_priority(item.get('priority')),
         'due_date': parse_due_date(item.get('due_date')),
         'status': normalize_status(item.get('status'), item.get('done')),
+        'tags': normalize_tags(item.get('tags')),
         'created_at': created_at,
         'updated_at': updated_at,
     }
@@ -147,6 +170,7 @@ def query_tasks(todos):
     status = (request.args.get('status') or 'all').strip().lower()
     priority = (request.args.get('priority') or '').strip()
     due = (request.args.get('due') or '').strip().lower()
+    tag = (request.args.get('tag') or '').strip().lower()
     sort_by = (request.args.get('sort') or 'created_at').strip().lower()
     order = (request.args.get('order') or 'desc').strip().lower()
 
@@ -170,6 +194,12 @@ def query_tasks(todos):
     if due in {'overdue', 'today', 'this_week'}:
         filtered = [task for task in filtered if due_bucket(task, due)]
 
+    if tag:
+        filtered = [
+            task for task in filtered
+            if any(t.lower() == tag for t in task.get('tags', []))
+        ]
+
     if sort_by not in {'created_at', 'due_date', 'priority', 'title'}:
         sort_by = 'created_at'
     if order not in {'asc', 'desc'}:
@@ -191,8 +221,56 @@ def build_task_from_request(payload):
         'priority': normalize_priority(payload.get('priority')),
         'due_date': parse_due_date(payload.get('due_date')),
         'status': normalize_status(payload.get('status')),
+        'tags': normalize_tags(payload.get('tags')),
         'created_at': timestamp,
         'updated_at': timestamp,
+    }
+
+
+def parse_iso_timestamp(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    except ValueError:
+        return None
+
+
+def compute_stats(todos):
+    today = date.today()
+    now = datetime.now(timezone.utc)
+    week_ago = now - timedelta(days=7)
+
+    total = len(todos)
+    completed = 0
+    overdue = 0
+    completed_last_7_days = 0
+
+    for task in todos:
+        status = task.get('status')
+        if status == 'completed':
+            completed += 1
+
+            updated = parse_iso_timestamp(task.get('updated_at'))
+            if updated and updated >= week_ago:
+                completed_last_7_days += 1
+
+        due_raw = parse_due_date(task.get('due_date'))
+        if due_raw:
+            due = datetime.strptime(due_raw, '%Y-%m-%d').date()
+            if due < today and status != 'completed':
+                overdue += 1
+
+    active = total - completed
+    completion_rate = round((completed / total) * 100, 1) if total else 0.0
+
+    return {
+        'total_tasks': total,
+        'active_tasks': active,
+        'completed_tasks': completed,
+        'overdue_tasks': overdue,
+        'completed_last_7_days': completed_last_7_days,
+        'completion_rate': completion_rate,
     }
 
 
@@ -225,6 +303,30 @@ def get_tasks():
     todos = load_todos()
     filtered = query_tasks(todos)
     return jsonify({'tasks': filtered, 'count': len(filtered)})
+
+
+@todo_routes.route('/api/stats', methods=['GET'])
+def get_stats():
+    todos = load_todos()
+    return jsonify(compute_stats(todos))
+
+
+@todo_routes.route('/api/tags', methods=['GET'])
+def list_tags():
+    todos = load_todos()
+    seen = set()
+    tags = []
+
+    for task in todos:
+        for tag in task.get('tags', []):
+            lowered = tag.lower()
+            if lowered in seen:
+                continue
+            seen.add(lowered)
+            tags.append(tag)
+
+    tags.sort(key=lambda t: t.lower())
+    return jsonify({'tags': tags, 'count': len(tags)})
 
 
 @todo_routes.route('/api/tasks', methods=['POST'])
@@ -260,6 +362,8 @@ def update_task(task_id):
             task['due_date'] = parse_due_date(payload.get('due_date'))
         if 'status' in payload:
             task['status'] = normalize_status(payload.get('status'))
+        if 'tags' in payload:
+            task['tags'] = normalize_tags(payload.get('tags'))
 
         task['updated_at'] = now_iso()
         updated = task
@@ -270,6 +374,44 @@ def update_task(task_id):
 
     save_todos(todos)
     return jsonify(updated)
+
+
+@todo_routes.route('/api/tasks/<task_id>/tags', methods=['POST'])
+def add_task_tag(task_id):
+    todos = load_todos()
+    payload = request.get_json(silent=True) or {}
+    tag = str(payload.get('tag') or '').strip()
+    if not tag:
+        return jsonify({'error': 'tag is required'}), 400
+
+    for task in todos:
+        if task.get('id') != task_id:
+            continue
+        tags = normalize_tags(task.get('tags'))
+        if tag.lower() not in [t.lower() for t in tags]:
+            tags.append(tag)
+        task['tags'] = tags
+        task['updated_at'] = now_iso()
+        save_todos(todos)
+        return jsonify(task), 200
+
+    return jsonify({'error': 'task not found'}), 404
+
+
+@todo_routes.route('/api/tasks/<task_id>/tags/<tag_name>', methods=['DELETE'])
+def remove_task_tag(task_id, tag_name):
+    todos = load_todos()
+
+    for task in todos:
+        if task.get('id') != task_id:
+            continue
+        kept = [t for t in task.get('tags', []) if t.lower() != tag_name.lower()]
+        task['tags'] = kept
+        task['updated_at'] = now_iso()
+        save_todos(todos)
+        return jsonify(task), 200
+
+    return jsonify({'error': 'task not found'}), 404
 
 
 @todo_routes.route('/api/tasks/<task_id>', methods=['DELETE'])
