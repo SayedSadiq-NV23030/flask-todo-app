@@ -299,6 +299,62 @@ button, input, textarea{min-height:44px}
   border:1px solid rgba(108, 92, 231, 0.22);
 }
 
+.task-comments{
+  margin-top:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.task-comment{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:12px;
+}
+
+.comment-meta{
+  font-weight:700;
+  color:var(--primary);
+}
+
+.comment-body{
+  color:var(--text);
+}
+
+.comment-delete{
+  margin-left:auto;
+  border:1px solid var(--input-border);
+  background:var(--input-bg);
+  border-radius:8px;
+  cursor:pointer;
+  min-height:24px;
+  min-width:24px;
+  line-height:1;
+}
+
+.task-comment-empty{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.comment-form{
+  display:flex;
+  gap:8px;
+  margin-top:2px;
+}
+
+.comment-input{
+  flex:1;
+  min-width:0;
+  border:1px solid var(--input-border);
+  border-radius:8px;
+  background:var(--input-bg);
+  color:var(--text);
+  padding:6px 8px;
+  min-height:34px;
+}
+
 .task-title,
 .task-meta{
   word-break:break-word;
