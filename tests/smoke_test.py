@@ -52,21 +52,57 @@ def run_smoke():
         r = client.post('/add', data={'todo': 'Test task 1'}, follow_redirects=True)
         assert r.status_code == 200, 'POST /add (todo) failed (status)'
 
-        # Add using 'task' field (project form)
-        r = client.post('/add', data={'task': 'Project Alpha'}, follow_redirects=True)
+        # Add using 'task' field + metadata
+        r = client.post('/add', data={
+            'task': 'Project Alpha',
+            'description': 'Milestone preparation',
+            'priority': '1',
+            'due_date': '2099-12-31'
+        }, follow_redirects=True)
         assert r.status_code == 200, 'POST /add (task) failed (status)'
 
-        # Check todos.json content (server should have written items)
+        # Check todos.json content (server should have written structured items)
         with open(TODOS, 'r') as f:
             items = json.load(f)
-        assert 'Test task 1' in items and 'Project Alpha' in items, 'todos.json did not contain added items'
+        titles = [i.get('title') for i in items]
+        assert 'Test task 1' in titles and 'Project Alpha' in titles, 'todos.json missing expected titles'
+        alpha = next(i for i in items if i.get('title') == 'Project Alpha')
+        assert alpha.get('description') == 'Milestone preparation'
+        assert alpha.get('priority') == 1
+        assert alpha.get('due_date') == '2099-12-31'
+        assert alpha.get('status') == 'active'
 
         # Delete first item
         r = client.get('/delete/0', follow_redirects=True)
         assert r.status_code == 200
         with open(TODOS, 'r') as f:
             items = json.load(f)
-        assert 'Test task 1' not in items, 'Delete did not remove item'
+        titles_after_delete = [i.get('title') for i in items]
+        assert 'Project Alpha' not in titles_after_delete, 'Delete did not remove item'
+
+        # API: search by title/description
+        r = client.get('/api/tasks?q=test')
+        assert r.status_code == 200
+        payload = r.get_json()
+        assert payload['count'] == 1
+        assert payload['tasks'][0]['title'] == 'Test task 1'
+
+        # API: create then filter by completed status
+        r = client.post('/api/tasks', json={
+            'title': 'API Task',
+            'description': 'Created from test',
+            'priority': 3,
+            'due_date': '2099-10-01'
+        })
+        assert r.status_code == 201
+        created = r.get_json()
+        r = client.patch(f"/api/tasks/{created['id']}", json={'status': 'completed'})
+        assert r.status_code == 200
+
+        r = client.get('/api/tasks?status=completed&sort=priority&order=asc')
+        assert r.status_code == 200
+        payload = r.get_json()
+        assert any(t['id'] == created['id'] for t in payload['tasks'])
 
         # Offline page
         r = client.get('/offline')
