@@ -299,6 +299,90 @@ button, input, textarea{min-height:44px}
   border:1px solid rgba(108, 92, 231, 0.22);
 }
 
+.subtasks-wrap{
+  margin-top:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.subtasks-header{
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+}
+
+.subtasks-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.subtask-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.subtask-toggle{
+  min-width:24px;
+  min-height:24px;
+  width:24px;
+  height:24px;
+  border-radius:999px;
+  border:1px solid var(--input-border);
+  background:var(--input-bg);
+  cursor:pointer;
+  line-height:1;
+}
+
+.subtask-toggle.done{
+  background:var(--primary);
+  border-color:var(--primary);
+  color:#fff;
+}
+
+.subtask-title{
+  font-size:13px;
+}
+
+.subtask-title.done{
+  text-decoration:line-through;
+  color:var(--muted);
+}
+
+.subtask-delete{
+  margin-left:auto;
+  min-width:24px;
+  min-height:24px;
+  border:1px solid var(--input-border);
+  background:var(--input-bg);
+  border-radius:8px;
+  cursor:pointer;
+  line-height:1;
+}
+
+.subtask-empty{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.subtask-form{
+  display:flex;
+  gap:8px;
+}
+
+.subtask-input{
+  flex:1;
+  min-width:0;
+  min-height:34px;
+  border:1px solid var(--input-border);
+  border-radius:8px;
+  background:var(--input-bg);
+  color:var(--text);
+  padding:6px 8px;
+}
+
 .task-title,
 .task-meta{
   word-break:break-word;

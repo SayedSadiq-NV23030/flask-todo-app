@@ -104,3 +104,43 @@ def test_tags_and_stats_endpoints(tmp_path):
             assert stats_payload['completed_tasks'] == 1
     finally:
         os.chdir(cwd)
+
+
+def test_subtasks_lifecycle(tmp_path):
+    app = load_flask_app()
+    app.config['TESTING'] = True
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        with open('todos.json', 'w') as f:
+            json.dump([], f)
+
+        with app.test_client() as client:
+            create_task = client.post('/api/tasks', json={'title': 'Parent task'})
+            assert create_task.status_code == 201
+            task = create_task.get_json()
+
+            s1 = client.post(f"/api/tasks/{task['id']}/subtasks", json={'title': 'First step'})
+            s2 = client.post(f"/api/tasks/{task['id']}/subtasks", json={'title': 'Second step'})
+            assert s1.status_code == 201
+            assert s2.status_code == 201
+            sub1 = s1.get_json()
+            sub2 = s2.get_json()
+
+            toggle = client.patch(f"/api/tasks/{task['id']}/subtasks/{sub1['id']}", json={'is_done': True})
+            assert toggle.status_code == 200
+            assert toggle.get_json()['is_done'] is True
+
+            reorder = client.post(
+                f"/api/tasks/{task['id']}/subtasks/reorder",
+                json={'ordered_ids': [sub2['id'], sub1['id']]},
+            )
+            assert reorder.status_code == 200
+            reordered = reorder.get_json()['subtasks']
+            assert reordered[0]['id'] == sub2['id']
+
+            remove = client.delete(f"/api/tasks/{task['id']}/subtasks/{sub2['id']}")
+            assert remove.status_code == 200
+    finally:
+        os.chdir(cwd)
