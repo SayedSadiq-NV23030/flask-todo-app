@@ -84,6 +84,26 @@ def normalize_tags(tags):
     return cleaned
 
 
+def normalize_comments(comments):
+    if not isinstance(comments, list):
+        return []
+
+    out = []
+    for item in comments:
+        if not isinstance(item, dict):
+            continue
+        body = str(item.get('body') or '').strip()
+        if not body:
+            continue
+        out.append({
+            'id': str(item.get('id') or uuid.uuid4().hex),
+            'author': str(item.get('author') or 'guest').strip() or 'guest',
+            'body': body[:300],
+            'created_at': str(item.get('created_at') or now_iso()),
+        })
+    return out
+
+
 def normalize_task(item):
     timestamp = now_iso()
 
@@ -125,6 +145,7 @@ def normalize_task(item):
         'due_date': parse_due_date(item.get('due_date')),
         'status': normalize_status(item.get('status'), item.get('done')),
         'tags': normalize_tags(item.get('tags')),
+        'comments': normalize_comments(item.get('comments')),
         'created_at': created_at,
         'updated_at': updated_at,
     }
@@ -222,6 +243,7 @@ def build_task_from_request(payload):
         'due_date': parse_due_date(payload.get('due_date')),
         'status': normalize_status(payload.get('status')),
         'tags': normalize_tags(payload.get('tags')),
+        'comments': [],
         'created_at': timestamp,
         'updated_at': timestamp,
     }
@@ -410,6 +432,59 @@ def remove_task_tag(task_id, tag_name):
         task['updated_at'] = now_iso()
         save_todos(todos)
         return jsonify(task), 200
+
+    return jsonify({'error': 'task not found'}), 404
+
+
+@todo_routes.route('/api/tasks/<task_id>/comments', methods=['POST'])
+def add_task_comment(task_id):
+    todos = load_todos()
+    payload = request.get_json(silent=True) or {}
+    body = str(payload.get('body') or '').strip()
+    author = str(payload.get('author') or 'guest').strip() or 'guest'
+
+    if not body:
+        return jsonify({'error': 'comment body is required'}), 400
+    if len(body) > 300:
+        return jsonify({'error': 'comment body must be <= 300 chars'}), 400
+
+    for task in todos:
+        if task.get('id') != task_id:
+            continue
+
+        comment = {
+            'id': uuid.uuid4().hex,
+            'author': author[:40],
+            'body': body,
+            'created_at': now_iso(),
+        }
+        comments = normalize_comments(task.get('comments'))
+        comments.append(comment)
+        task['comments'] = comments
+        task['updated_at'] = now_iso()
+        save_todos(todos)
+        return jsonify(comment), 201
+
+    return jsonify({'error': 'task not found'}), 404
+
+
+@todo_routes.route('/api/tasks/<task_id>/comments/<comment_id>', methods=['DELETE'])
+def delete_task_comment(task_id, comment_id):
+    todos = load_todos()
+
+    for task in todos:
+        if task.get('id') != task_id:
+            continue
+
+        comments = normalize_comments(task.get('comments'))
+        kept = [c for c in comments if c.get('id') != comment_id]
+        if len(kept) == len(comments):
+            return jsonify({'error': 'comment not found'}), 404
+
+        task['comments'] = kept
+        task['updated_at'] = now_iso()
+        save_todos(todos)
+        return jsonify({'ok': True}), 200
 
     return jsonify({'error': 'task not found'}), 404
 

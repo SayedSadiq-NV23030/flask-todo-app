@@ -101,6 +101,19 @@ document.addEventListener('DOMContentLoaded', () => {
               ${t.description ? escapeHtml(t.description) + ' • ' : ''}Priority: ${priorityLabel(t.priority)}${t.due_date ? ' • Due: ' + escapeHtml(formatDateLabel(t.due_date)) : ''}${t.created_at ? ' • ' + escapeHtml(createdLabel(t.created_at)) : ''}
             </div>
             ${Array.isArray(t.tags) && t.tags.length ? `<div class="task-tags">${t.tags.map((tag) => `<span class="task-tag">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+            <div class="task-comments">
+              ${Array.isArray(t.comments) && t.comments.length ? t.comments.map((comment) => `
+                <div class="task-comment">
+                  <span class="comment-meta">${escapeHtml(comment.author || 'guest')}</span>
+                  <span class="comment-body">${escapeHtml(comment.body || '')}</span>
+                  <button class="comment-delete" data-task-id="${t.id}" data-comment-id="${comment.id}">x</button>
+                </div>
+              `).join('') : '<div class="task-comment-empty">No comments yet</div>'}
+              <form class="comment-form" data-task-id="${t.id}">
+                <input class="comment-input" data-task-id="${t.id}" maxlength="300" placeholder="Add comment..." />
+                <button type="submit" class="btn btn-ghost">Post</button>
+              </form>
+            </div>
             <div class="task-toggle-hint">${t.status === 'completed' ? 'Completed. Tap to uncheck.' : 'Tap circle to mark as done.'}</div>
           </div>
         </div>
@@ -117,6 +130,26 @@ document.addEventListener('DOMContentLoaded', () => {
       li.querySelector('.checkbox').addEventListener('click', (e) => {
         const id = e.target.getAttribute('data-id');
         toggleDone(id);
+      });
+
+      li.querySelectorAll('.comment-form').forEach((commentForm) => {
+        commentForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const taskId = commentForm.getAttribute('data-task-id');
+          const inputEl = commentForm.querySelector('.comment-input');
+          const body = (inputEl && inputEl.value || '').trim();
+          if (!body) return;
+          await addComment(taskId, body);
+          if (inputEl) inputEl.value = '';
+        });
+      });
+
+      li.querySelectorAll('.comment-delete').forEach((button) => {
+        button.addEventListener('click', async (e) => {
+          const taskId = e.target.getAttribute('data-task-id');
+          const commentId = e.target.getAttribute('data-comment-id');
+          await deleteComment(taskId, commentId);
+        });
       });
 
       listEl.appendChild(li);
@@ -173,6 +206,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirm('Clear all tasks?')) return;
     const ids = tasks.map((t) => t.id);
     await Promise.all(ids.map((id) => fetch(`/api/tasks/${id}`, { method: 'DELETE' })));
+    await refreshAll();
+  }
+
+  async function addComment(taskId, body) {
+    const res = await fetch(`/api/tasks/${taskId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body }),
+    });
+    if (!res.ok) {
+      throw new Error('Failed to add comment');
+    }
+    await refreshAll();
+  }
+
+  async function deleteComment(taskId, commentId) {
+    const res = await fetch(`/api/tasks/${taskId}/comments/${commentId}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      throw new Error('Failed to delete comment');
+    }
     await refreshAll();
   }
 

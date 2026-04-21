@@ -116,6 +116,14 @@ def run_smoke():
         payload = r.get_json()
         assert any(t['id'] == created['id'] for t in payload['tasks'])
 
+        # API: comments create/delete
+        r = client.post(f"/api/tasks/{created['id']}/comments", json={'body': 'Ship it'})
+        assert r.status_code == 201
+        comment = r.get_json()
+
+        r = client.delete(f"/api/tasks/{created['id']}/comments/{comment['id']}")
+        assert r.status_code == 200
+
         # API: stats dashboard
         r = client.get('/api/stats')
         assert r.status_code == 200

@@ -104,3 +104,38 @@ def test_tags_and_stats_endpoints(tmp_path):
             assert stats_payload['completed_tasks'] == 1
     finally:
         os.chdir(cwd)
+
+
+def test_task_comments_endpoints(tmp_path):
+    app = load_flask_app()
+    app.config['TESTING'] = True
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        with open('todos.json', 'w') as f:
+            json.dump([], f)
+
+        with app.test_client() as client:
+            create = client.post('/api/tasks', json={'title': 'Task with comments'})
+            assert create.status_code == 201
+            task = create.get_json()
+
+            add_comment = client.post(f"/api/tasks/{task['id']}/comments", json={'body': 'Looks good'})
+            assert add_comment.status_code == 201
+            comment = add_comment.get_json()
+            assert comment['body'] == 'Looks good'
+
+            list_tasks = client.get('/api/tasks')
+            assert list_tasks.status_code == 200
+            payload = list_tasks.get_json()
+            created_task = next(t for t in payload['tasks'] if t['id'] == task['id'])
+            assert any(c['id'] == comment['id'] for c in created_task.get('comments', []))
+
+            delete_comment = client.delete(f"/api/tasks/{task['id']}/comments/{comment['id']}")
+            assert delete_comment.status_code == 200
+
+            invalid_comment = client.post(f"/api/tasks/{task['id']}/comments", json={'body': ''})
+            assert invalid_comment.status_code == 400
+    finally:
+        os.chdir(cwd)
